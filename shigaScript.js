@@ -5,12 +5,13 @@ if (!petId) {
     window.location.href = 'index.html';
 }
 
-function loadPet() {
+function loadPet()
+{
     fetch(`http://localhost:3000/pet/${petId}`)
         .then(res => res.json())
         .then(pet => {
             document.getElementById('pet-name').textContent = pet.name;
-            document.getElementById('happiness').textContent = pet.happiness;
+            document.getElementById('happiness').textContent = pet.hap;
             document.getElementById('hunger').textContent = pet.hunger;
         })
         .catch(err => {
@@ -19,7 +20,8 @@ function loadPet() {
 }
 
 function feedPet() {
-    fetch(`http://localhost:3000/pet/feed`, {
+    fetch(`http://localhost:3000/pet/feed`, 
+    {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: petId })
@@ -28,7 +30,8 @@ function feedPet() {
 }
 
 function playWithPet() {
-    fetch(`http://localhost:3000/pet/play`, {
+    fetch(`http://localhost:3000/pet/play`, 
+    {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: petId })
