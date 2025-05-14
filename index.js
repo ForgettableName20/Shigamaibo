@@ -10,9 +10,18 @@ app.use(express.json());
 const db = mysql.createPool(
 {
     host: "maglev.proxy.rlwy.net",
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    user: "root",
+    password: "toyMPaXGatxDvOeCzwVARtzbunqWBnPx",
+    database: "MySQL_Tamagotchi"
+});
+
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error('MySQL connection error:', err);
+    } else {
+        console.log('Connected to MySQL');
+        connection.release();
+    }
 });
 
 app.get('/', (req, res) =>
