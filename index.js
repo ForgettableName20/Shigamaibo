@@ -31,45 +31,144 @@ app.get('/', (req, res) =>
     res.send('Backend is running');
 });
 
-app.get('/pet/:id', (req, res) => {
-    const petId = req.params.id;
-    db.query('SELECT * FROM pets WHERE id = ?', [petId], (err, results) => {
+app.get('/users/:id', (req, res) => {
+    const userId = req.params.id;
+    db.query('SELECT * FROM users WHERE id = ?', [userId], (err, results) =>
+    {
         if (err) return res.status(500).send(err);
         res.json(results[0]);
     });
 });
 
-app.post('/pet/create', (req, res) =>
-{
-    const { name } = req.body;
-    const checkName = 'SELECT id FROM pets WHERE name = ?';
+app.post('/setup', (req, res) => {
+    const { username, petName } = req.body;
 
-    db.query(checkName, [name], (err, results) => {
-        if (err) {
-            console.error('Error checking pet name:', err);
-            return res.status(500).send('Database error');
+    if (!username || !petName) {
+        return res.status(400).json({ message: 'Missing username or pet name' });
+    }
+
+    const createUserQuery = 'INSERT INTO users (username) VALUES (?)';
+    db.query(createUserQuery, [username], (err, userResult) =>
+    {
+        if (err)
+        {
+            //console.error('User insert error:', err);
+            return res.status(500).json({ message: 'Username already exists.' });
         }
 
-        if (results.length > 0) {
-            return res.status(409).json({ message: 'Name already taken 😔' });
-        }
+        const userId = userResult.insertId;
 
-        const insertName = 'INSERT INTO pets (name, hap, hunger) VALUES (?, 50, 50)';
-        db.query(insertName, [name], (err, result) => {
+        const createPetQuery = 'INSERT INTO pets (name, hap, hunger, health, user_id) VALUES (?, 50, 50, 50, ?)';
+        db.query(createPetQuery, [petName, userId], (err, petResult) =>
+        {
             if (err) {
-                console.error(err);
-                return res.status(500).send(err);
+                console.error('Pet insert error:', err);
+                return res.status(500).json({ message: 'Error creating pet' });
             }
 
-            res.json({ id: result.insertId });
+            console.log('Inserted pet with ID:', petResult.insertId);
+
+            db.query('SELECT * FROM pets WHERE id = ?', [petResult.insertId], (err, result) => {
+                console.log('Inserted pet row:', result);
+
+                res.json({ userId, petId: petResult.insertId, username });
+            });
         });
     });
 });
 
+app.get('/pet/:id', (req, res) =>
+{
+    const petId = req.params.id;
+    db.query('SELECT * FROM pets WHERE id = ?', [petId], (err, results) =>
+    {
+        if (err) return res.status(500).send(err);
+        if (results.length === 0) return res.status(404).send('Pet not found');
+
+        const pet = results[0];
+
+        const lastSeen = new Date(pet.last_seen);
+        const now = new Date();
+        const diffDays = (now - lastSeen) / (1000 * 60 * 60 * 24);
+
+        if (pet.health === 0 && diffDays >= 2)
+        {
+            return res.json({ ...pet, dead: true });
+        }
+        else if (diffDays >= .5)
+        {
+            let newHunger = Math.min(pet.hunger + 20 * diffDays, 100);
+            let newHap = Math.max(pet.hap - 20 * diffDays, 0);
+
+
+            let newHealth = Math.round((newHap + (100 - newHunger)) / 2);
+
+            db.query(
+                'UPDATE pets SET hunger = ?, hap = ?, health = ?, last_seen = NOW() WHERE id = ?',
+                [newHunger, newHap, newHealth, petId],
+                (updateErr) => {
+                    if (updateErr) return res.status(500).send(updateErr);
+                    res.json({
+                        ...pet,
+                        hunger: Math.round(newHunger),
+                        hap: Math.round(newHap),
+                        health: Math.round(newHealth),
+                        last_seen: now,
+                        dead: newHealth === 0 && diffDays >= 2
+                    });
+                }
+            );
+        }
+        else
+        {
+            res.json({ ...pet, dead: pet.health === 0 && diffDays >= 2 });
+        }
+    });
+});
+
+//app.post('/pet/create', (req, res) =>
+//{
+//    const { name, userId } = req.body;
+//    console.log('Received pet creation request:', { name, userId });
+
+//    if (!name || !userId)
+//    {
+//        return res.status(400).json({ message: "Missing user ID or pet name" });
+//    }
+
+//    const checkName = 'SELECT * FROM pets WHERE name = ? AND user_id = ?';
+
+//    db.query(checkName, [name, userId], (err, results) =>
+//    {
+//        if (err)
+//        {
+//            console.error(err);
+//            return res.status(500).send('Database error');
+//        }
+
+//        if (results.length > 0)
+//        {
+//            return res.status(409).json({ message: "Pet name already exists" });
+//        }
+
+//        const insertName = 'INSERT INTO pets (name, hap, hunger, user_id) VALUES (?, 50, 50, ?)';
+//        db.query(insertName, [name, userId], (err, result) =>
+//        {
+//            if (err) {
+//                console.error(err);
+//                return res.status(500).send(err);
+//            }
+
+//            res.json({ id: result.insertId });
+//        });
+//    });
+//});
+
 app.post('/pet/feed', (req, res) =>
 {
     const { id } = req.body;
-    db.query('UPDATE pets SET hunger = GREATEST(hunger - 10, 0) WHERE id = ?', [id], (err) => {
+    db.query('UPDATE pets SET hunger = GREATEST(hunger - 10, 0), health = (100 - hunger + hap) / 2, last_seen = NOW() WHERE id = ?', [id], (err) =>
+    {
         if (err) return res.status(500).send(err);
         res.sendStatus(200);
     });
@@ -78,7 +177,8 @@ app.post('/pet/feed', (req, res) =>
 app.post('/pet/play', (req, res) =>
 {
     const { id } = req.body;
-    db.query('UPDATE pets SET hap = LEAST(hap + 10, 100) WHERE id = ?', [id], (err) => {
+    db.query('UPDATE pets SET hap = LEAST(hap + 10, 100), health = (100 - hunger + hap) / 2, last_seen = NOW() WHERE id = ?', [id], (err) =>
+    {
         if (err) return res.status(500).send(err);
         res.sendStatus(200);
     });

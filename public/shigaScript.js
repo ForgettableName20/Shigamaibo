@@ -1,18 +1,37 @@
 ﻿const petId = localStorage.getItem('petId');
+const username = localStorage.getItem('username');
+const usernameDisplay = document.getElementById('user-name');
 
-if (!petId) {
-    alert('No pet found! Please create one first.');
+if (!petId)
+{
+    alert('No pet found! Please create one.');
     window.location.href = 'index.html';
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    if (username && usernameDisplay) {
+        usernameDisplay.innerText = username;
+    }
+
+    loadPet();
+});
 
 function loadPet()
 {
     fetch(`http://localhost:3000/pet/${petId}`)
         .then(res => res.json())
-        .then(pet => {
+        .then(pet =>
+        {
+            if (pet.dead) {
+                alert('💀 Your pet died cause you neglected them. 😡');
+                window.location.href = 'index.html';
+            }
+
             document.getElementById('pet-name').textContent = pet.name;
             document.getElementById('happiness').textContent = pet.hap;
             document.getElementById('hunger').textContent = pet.hunger;
+            document.getElementById('health').textContent = pet.health;
         })
         .catch(err => {
             console.error('Failed to load pet:', err);
@@ -39,4 +58,4 @@ function playWithPet() {
         .then(() => loadPet());
 }
 
-loadPet();
+//loadPet();

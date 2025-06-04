@@ -3,19 +3,24 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="styleSheet.css">
+    <link rel="stylesheet" type="text/css" href="styleSheet.css?v=1.0.8">
     <title>Shigamaibo Pet</title>
 </head>
 <body>
     <h1>🐾 Welcome to Shigamaibo Pet!</h1>
 
-    <form id="name-form">
+    <form id="registering-form">
+        <label for="user-name">What's your name?</label><br>
+        <input type="text" id="user-name" name="user-name" required>
+        <br><br>
         <label for="pet-name">Name your pet:</label><br>
         <input type="text" id="pet-name" name="pet-name" required>
         <br>
-        <button type="submit">Start!</button>
+        <button type="submit">Start Game</button>
     </form>
 
-    <script src="name.js"></script>
+    <p id="error-message"></p>
+
+    <script type="module" src="name.js?v=1.0.9"></script>
 </body>
 </html>
