@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadPet()
 {
-    fetch(`http://localhost:3000/pet/${petId}`)
+    fetch(`https://shigamaibo.up.railway.app/pet/${petId}`)
         .then(res => res.json())
         .then(pet =>
         {
@@ -39,7 +39,7 @@ function loadPet()
 }
 
 function feedPet() {
-    fetch(`http://localhost:3000/pet/feed`, 
+    fetch(`https://shigamaibo.up.railway.app/pet/feed`, 
     {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ function feedPet() {
 }
 
 function playWithPet() {
-    fetch(`http://localhost:3000/pet/play`, 
+    fetch(`https://shigamaibo.up.railway.app/pet/play`, 
     {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
