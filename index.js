@@ -18,7 +18,6 @@ const db = mysql.createPool(
     port: process.env.DB_PORT
     });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
@@ -203,7 +202,7 @@ app.get('/test', (req, res) =>
     });
 });
 
-app.listen(3000, () =>
-{
-    console.log('Server is running on http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
