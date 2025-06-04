@@ -18,10 +18,6 @@ const db = mysql.createPool(
     port: process.env.DB_PORT
     });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
 db.getConnection((err, connection) =>
 {
     if (err) {
