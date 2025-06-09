@@ -20,9 +20,12 @@ const db = mysql.createPool(
 
 db.getConnection((err, connection) =>
 {
-    if (err) {
+    if (err)
+    {
         console.error('MySQL connection error:', err);
-    } else {
+    }
+    else
+    {
         console.log('Connected to MySQL');
         connection.release();
     }
@@ -54,13 +57,12 @@ app.post('/setup', (req, res) => {
     {
         if (err)
         {
-            //console.error('User insert error:', err);
             return res.status(500).json({ message: 'Username already exists.' });
         }
 
         const userId = userResult.insertId;
 
-        const createPetQuery = 'INSERT INTO pets (name, hap, hunger, health, user_id) VALUES (?, 50, 50, 50, ?)';
+        const createPetQuery = 'INSERT INTO pets (name, hap, hunger, health, user_id, last_seen) VALUES (?, 50, 50, 50, ?, NOW())';
         db.query(createPetQuery, [petName, userId], (err, petResult) =>
         {
             if (err) {
@@ -71,7 +73,7 @@ app.post('/setup', (req, res) => {
             console.log('Inserted pet with ID:', petResult.insertId);
 
             db.query('SELECT * FROM pets WHERE id = ?', [petResult.insertId], (err, result) => {
-                console.log('Inserted pet row:', result);
+                console.log('Inserted pet row:', result[0]);
 
                 res.json({ userId, petId: petResult.insertId, username });
             });
@@ -82,6 +84,7 @@ app.post('/setup', (req, res) => {
 app.get('/pet/:id', (req, res) =>
 {
     const petId = req.params.id;
+
     db.query('SELECT * FROM pets WHERE id = ?', [petId], (err, results) =>
     {
         if (err) return res.status(500).send(err);
@@ -93,12 +96,10 @@ app.get('/pet/:id', (req, res) =>
         const now = new Date();
         const diffDays = (now - lastSeen) / (1000 * 60 * 60 * 24);
 
-        if (pet.health === 0 && diffDays >= 2)
-        {
+        if (pet.health === 0 && diffDays >= 2) {
             return res.json({ ...pet, dead: true });
         }
-        else if (diffDays >= .5)
-        {
+        else if (diffDays >= .5) {
             let newHunger = Math.min(pet.hunger + 20 * diffDays, 100);
             let newHap = Math.max(pet.hap - 20 * diffDays, 0);
 
@@ -128,61 +129,47 @@ app.get('/pet/:id', (req, res) =>
     });
 });
 
-//app.post('/pet/create', (req, res) =>
-//{
-//    const { name, userId } = req.body;
-//    console.log('Received pet creation request:', { name, userId });
-
-//    if (!name || !userId)
-//    {
-//        return res.status(400).json({ message: "Missing user ID or pet name" });
-//    }
-
-//    const checkName = 'SELECT * FROM pets WHERE name = ? AND user_id = ?';
-
-//    db.query(checkName, [name, userId], (err, results) =>
-//    {
-//        if (err)
-//        {
-//            console.error(err);
-//            return res.status(500).send('Database error');
-//        }
-
-//        if (results.length > 0)
-//        {
-//            return res.status(409).json({ message: "Pet name already exists" });
-//        }
-
-//        const insertName = 'INSERT INTO pets (name, hap, hunger, user_id) VALUES (?, 50, 50, ?)';
-//        db.query(insertName, [name, userId], (err, result) =>
-//        {
-//            if (err) {
-//                console.error(err);
-//                return res.status(500).send(err);
-//            }
-
-//            res.json({ id: result.insertId });
-//        });
-//    });
-//});
-
 app.post('/pet/feed', (req, res) =>
 {
     const { id } = req.body;
-    db.query('UPDATE pets SET hunger = GREATEST(hunger - 10, 0), health = (100 - hunger + hap) / 2, last_seen = NOW() WHERE id = ?', [id], (err) =>
-    {
-        if (err) return res.status(500).send(err);
-        res.sendStatus(200);
+
+    db.query('SELECT hunger, hap FROM pets WHERE id = ?', [id], (err, results) => {
+        if (err || results.length === 0) return res.status(500).send(err || 'Pet not found');
+
+        let { hunger, hap } = results[0];
+        hunger = Math.max(hunger - 10, 0);
+        const health = Math.round((100 - hunger + hap) / 2);
+
+        db.query(
+            'UPDATE pets SET hunger = ?, health = ?, last_seen = NOW() WHERE id = ?',
+            [hunger, health, id],
+            (updateErr) => {
+                if (updateErr) return res.status(500).send(updateErr);
+                res.sendStatus(200);
+            }
+        );
     });
 });
 
 app.post('/pet/play', (req, res) =>
 {
     const { id } = req.body;
-    db.query('UPDATE pets SET hap = LEAST(hap + 10, 100), health = (100 - hunger + hap) / 2, last_seen = NOW() WHERE id = ?', [id], (err) =>
+    db.query('SELECT hunger, hap FROM pets WHERE id = ?', [id], (err, results) =>
     {
-        if (err) return res.status(500).send(err);
-        res.sendStatus(200);
+        if (err || results.length === 0) return res.status(500).send(err || 'Pet not found');
+
+        let { hunger, hap } = results[0];
+        hap = Math.min(hap + 10, 100);
+        const health = Math.round((100 - hunger + hap) / 2);
+
+        db.query(
+            'UPDATE pets SET hap = ?, health = ?, last_seen = NOW() WHERE id = ?',
+            [hap, health, id],
+            (updateErr) => {
+                if (updateErr) return res.status(500).send(updateErr);
+                res.sendStatus(200);
+            }
+        );
     });
 });
 
@@ -198,7 +185,6 @@ app.get('/test', (req, res) =>
     });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
 });

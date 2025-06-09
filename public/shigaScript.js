@@ -19,12 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadPet()
 {
-    fetch(`https://shigamaibo.up.railway.app/pet/${petId}`)
+    fetch(`http://localhost:3000/pet/${petId}`)
         .then(res => res.json())
         .then(pet =>
         {
+            //console.log('Pet response:', pet);
+
             if (pet.dead) {
                 alert('💀 Your pet died cause you neglected them. 😡');
+                localStorage.removeItem('petId');
                 window.location.href = 'index.html';
             }
 
@@ -39,7 +42,7 @@ function loadPet()
 }
 
 function feedPet() {
-    fetch(`https://shigamaibo.up.railway.app/pet/feed`, 
+    fetch(`http://localhost:3000/pet/feed`, 
     {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +52,7 @@ function feedPet() {
 }
 
 function playWithPet() {
-    fetch(`https://shigamaibo.up.railway.app/pet/play`, 
+    fetch(`http://localhost:3000/pet/play`, 
     {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
