@@ -99,7 +99,7 @@ app.get('/pet/:id', (req, res) =>
         if (pet.health === 0 && diffDays >= 2) {
             return res.json({ ...pet, dead: true });
         }
-        else if (diffDays >= .5) {
+        else if (diffDays >= .13) {
             let newHunger = Math.min(pet.hunger + 20 * diffDays, 100);
             let newHap = Math.max(pet.hap - 20 * diffDays, 0);
 
