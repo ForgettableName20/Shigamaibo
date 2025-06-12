@@ -2,7 +2,6 @@
 const username = localStorage.getItem('username');
 const usernameDisplay = document.getElementById('user-name');
 
-let isAnimating = false;
 
 if (!petId)
 {
@@ -57,9 +56,6 @@ function loadPet()
 }
 
 function feedPet() {
-    if (isAnimating) return;
-
-    isAnimating = true;
 
     const petImage = document.getElementById('pet-image');
 
@@ -77,9 +73,6 @@ function feedPet() {
         if (pet.hunger != 0) {
             petImage.src = 'GormEating.gif';
         }
-        else {
-            isAnimating = false;
-        }
 
         loadPet();
         setTimeout(() => {
@@ -90,16 +83,11 @@ function feedPet() {
             } else {
                 petImage.src = 'GormIdleHap.gif';
             }
-
-            isAnimating = false;
         }, 1500);
     });
 }
 
 function playWithPet() {
-    if (isAnimating) return;
-
-    isAnimating = true;
 
     const petImage = document.getElementById('pet-image');
 
@@ -124,8 +112,6 @@ function playWithPet() {
                 } else {
                     petImage.src = 'GormIdleHap.gif';
                 }
-
-                isAnimating = false;
             }, 1300);
         });
 }
